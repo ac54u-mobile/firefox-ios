@@ -39,11 +39,11 @@
       },
       {
         "package": "Glean",
-        "repositoryURL": "https://github.com/mozilla/glean-swift",
+        "repositoryURL": "https://github.com/badboy/glean-swift",
         "state": {
           "branch": null,
-          "revision": "8470fb7d0ff00d1d0f845ec445fbc70b4c6cbab3",
-          "version": "66.3.0"
+          "revision": "288b87e053b041c09d89c83b1295109807b78052",
+          "version": "69.0.0"
         }
       },
       {
