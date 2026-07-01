@@ -387,9 +387,7 @@ class AppSettingsTableViewController: SettingsTableViewController,
         }
 
         // For users whose devices support alternate app icons, add the App Icon setting
-        // Enterprise builds (TrollStore) cannot use this API due to code signing requirements
-        if UIApplication.shared.supportsAlternateIcons,
-           !(Bundle.main.bundleIdentifier ?? "").hasSuffix("FennecEnterprise") {
+        if UIApplication.shared.supportsAlternateIcons {
             generalSettings.append(
                 AppIconSetting(
                     theme: themeManager.getCurrentTheme(for: windowUUID),
