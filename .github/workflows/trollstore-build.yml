@@ -60,10 +60,12 @@ jobs:
         run: |
           xcodebuild -resolvePackageDependencies \
             -project Client.xcodeproj \
+            -scheme Fennec_Enterprise \
             -derivedDataPath ../DerivedData \
             -onlyUsePackageVersionsFromResolvedFile 2>&1 || true
           xcodebuild -resolvePackageDependencies \
             -project Client.xcodeproj \
+            -scheme Fennec_Enterprise \
             -derivedDataPath ../DerivedData
 
       - name: Build
