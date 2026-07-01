@@ -8,6 +8,7 @@ import Shared
 
 class ChangeRSServerSetting: HiddenSetting {
     private let prefsKey = PrefsKeys.RemoteSettings.remoteSettingsEnvironment
+    private let customUrlKey = PrefsKeys.RemoteSettings.remoteSettingsCustomUrl
     private let prefs: Prefs = { return (AppContainer.shared.resolve() as Profile).prefs }()
 
     override var title: NSAttributedString? {
@@ -19,8 +20,12 @@ class ChangeRSServerSetting: HiddenSetting {
 
     override func onClick(_ navigationController: UINavigationController?) {
         let currentEnvRaw = prefs.stringForKey(prefsKey) ?? RemoteSettingsEnvironment.prod.rawValue
+        let currentCustom = prefs.stringForKey(customUrlKey) ?? ""
+        let currentDetail = currentEnvRaw == RemoteSettingsEnvironment.custom.rawValue
+            ? "Custom: \(currentCustom)"
+            : currentEnvRaw.capitalized
         let message = """
-        Current: \(currentEnvRaw.capitalized)
+        Current: \(currentDetail)
 
         Changes take effect on the next app launch.
         """
@@ -28,6 +33,23 @@ class ChangeRSServerSetting: HiddenSetting {
                                       message: message,
                                       preferredStyle: .alert)
 
+        alert.addAction(UIAlertAction(title: "Custom URL", style: .default, handler: { [weak self] _ in
+            guard let self else { return }
+            let inputAlert = UIAlertController(title: "Custom RS URL", message: nil, preferredStyle: .alert)
+            inputAlert.addTextField { textField in
+                textField.placeholder = "https://your-mirror.example.com/v1"
+                textField.text = self.prefs.stringForKey(self.customUrlKey)
+            }
+            inputAlert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
+                guard let self else { return }
+                if let text = inputAlert.textFields?.first?.text, !text.isEmpty {
+                    self.prefs.setString(text, forKey: self.customUrlKey)
+                    self.prefs.setString(RemoteSettingsEnvironment.custom.rawValue, forKey: self.prefsKey)
+                }
+            })
+            inputAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            navigationController?.present(inputAlert, animated: true)
+        }))
         alert.addAction(UIAlertAction(title: "Production V2", style: .default, handler: { [weak self] _ in
             guard let self else { return }
             self.prefs.setString(RemoteSettingsEnvironment.prodV2.rawValue, forKey: self.prefsKey)

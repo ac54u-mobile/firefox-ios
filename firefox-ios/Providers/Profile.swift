@@ -659,7 +659,7 @@ open class BrowserProfile: Profile,
     lazy var remoteSettingsService: RemoteSettingsService = {
         let remoteSettingsEnvironmentKey = prefs.stringForKey(PrefsKeys.RemoteSettings.remoteSettingsEnvironment) ?? ""
         let remoteSettingsEnvironment = RemoteSettingsEnvironment(rawValue: remoteSettingsEnvironmentKey) ?? .prod
-        let remoteSettingsServer = remoteSettingsEnvironment.toRemoteSettingsServer()
+        let remoteSettingsServer = remoteSettingsEnvironment.toRemoteSettingsServer(prefs: prefs)
         let bucketName = (remoteSettingsServer == .prod ? "main" : "main-preview")
         let config = RemoteSettingsConfig(
             server: remoteSettingsServer,
@@ -825,7 +825,7 @@ open class BrowserProfile: Profile,
 extension RemoteSettingsEnvironment {
     /// NOTE: It would much cleaner to use RemoteSettingsServer if it had a public initializer.
     /// TODO(FXIOS-13189): Add public initializer from rawValue to RemoteSettingsServer.
-    public func toRemoteSettingsServer() -> RemoteSettingsServer {
+    public func toRemoteSettingsServer(prefs: Prefs) -> RemoteSettingsServer {
         switch self {
         case .prod: return .prod
         case .stage: return .stage
@@ -833,6 +833,9 @@ extension RemoteSettingsEnvironment {
         case .prodV2: return .prodV2
         case .stageV2: return .stageV2
         case .devV2: return .devV2
+        case .custom:
+            let url = prefs.stringForKey(PrefsKeys.RemoteSettings.remoteSettingsCustomUrl) ?? ""
+            return .custom(url: url)
         }
     }
 }

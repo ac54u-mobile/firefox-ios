@@ -161,6 +161,8 @@ public struct PrefsKeys {
         "LastRemoteSettingsServiceSyncTimestamp"
         public static let remoteSettingsEnvironment =
         "remoteSettingsEnvironment"
+        public static let remoteSettingsCustomUrl =
+        "remoteSettingsCustomUrl"
     }
 
     public struct Sync {

@@ -11,4 +11,5 @@ public enum RemoteSettingsEnvironment: String {
     case prod
     case stage
     case dev
+    case custom
 }
