@@ -1,0 +1,94 @@
+name: Build Focus IPA for TrollStore
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'focus-ios/**'
+      - '.github/workflows/focus-trollstore-build.yml'
+
+jobs:
+  build:
+    name: Build Focus IPA
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode info
+        run: |
+          xcode-select -p
+          xcodebuild -version
+          swift --version
+
+      - name: Bootstrap
+        run: |
+          ./bootstrap.sh focus || true
+        env:
+          GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        id: build
+        working-directory: focus-ios
+        run: |
+          rm -rf ../DerivedData
+          xcodebuild build \
+            -project Blockzilla.xcodeproj \
+            -scheme "Focus" \
+            -sdk iphoneos \
+            -configuration FocusRelease \
+            -derivedDataPath ../DerivedData \
+            CODE_SIGN_ENTITLEMENTS=FocusEnterprise.entitlements \
+            CODE_SIGN_STYLE=Automatic \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            DEVELOPMENT_TEAM=0000000000 \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            CODE_SIGN_IDENTITY="" \
+            VALIDATE_PRODUCT=NO \
+            DEBUG_INFORMATION_FORMAT=dwarf \
+            2>&1 | tee ../build.log | tail -100
+
+          APP=$(find ../DerivedData -name "Firefox Focus.app" -o -name "Blockzilla.app" 2>/dev/null | grep -v Index | head -1)
+          if [ -z "$APP" ] || [ ! -f "$APP/Info.plist" ]; then
+            echo "Build failed. Errors:"
+            grep -i "error:" ../build.log 2>/dev/null | grep -v "validate-for-store\|BUILD SUCCEEDED" | head -20
+            exit 1
+          fi
+          echo "APP_PATH=${APP}" >> $GITHUB_OUTPUT
+          echo "Build succeeded: ${APP}"
+
+      - name: Package IPA
+        working-directory: focus-ios
+        run: |
+          APP_PATH="${{ steps.build.outputs.APP_PATH }}"
+          echo "App: ${APP_PATH}"
+          rm -rf Payload
+          mkdir -p Payload
+          cp -r "${APP_PATH}" Payload/
+          zip -rq Focus-TrollStore.ipa Payload/
+          rm -rf Payload
+          echo "IPA created: $(ls -lh Focus-TrollStore.ipa | awk '{print $5}')"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Focus-TrollStore
+          path: focus-ios/Focus-TrollStore.ipa
+          retention-days: 7
+
+      - name: Summary
+        run: |
+          IPA_SIZE=$(ls -lh focus-ios/Focus-TrollStore.ipa | awk '{print $5}')
+          {
+            echo "### Firefox Focus for TrollStore ✓"
+            echo ""
+            echo "| 项目 | 值 |"
+            echo "|------|-----|"
+            echo "| 适用 | iOS 17.0 + 巨魔(TrollStore) |"
+            echo "| Bundle ID | org.mozilla.ios.Focus.enterprise |"
+            echo "| IPA 大小 | ${IPA_SIZE} |"
+            echo ""
+            echo "**安装**: 下载下方 IPA → 用巨魔打开 → 点 Install"
+          } >> $GITHUB_STEP_SUMMARY
