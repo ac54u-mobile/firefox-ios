@@ -13,4 +13,4 @@ features:
         description: >
           Whether or not to enable the translations language picker (Phase 2).
         type: Boolean
-        default: true
+        default: false
