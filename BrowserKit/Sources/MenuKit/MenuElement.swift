@@ -14,7 +14,7 @@ public struct MenuElement: Equatable, Sendable {
     let isActive: Bool
     public let a11yLabel: String?
     public let a11yHint: String?
-    let a11yId: String
+    public let a11yId: String
     let isOptional: Bool
     let infoTitle: String?
     public let action: (@MainActor () -> Void)?
