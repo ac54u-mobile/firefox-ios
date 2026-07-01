@@ -405,7 +405,7 @@ struct MainMenuState: ScreenState, Sendable {
             siteProtectionsData: state.siteProtectionsData,
             isBrowserDefault: state.isBrowserDefault,
             isPhoneLandscape: state.isPhoneLandscape,
-            moreCellTapped: state.moreCellTapped
+            moreCellTapped: false
         )
     }
 
@@ -420,7 +420,7 @@ struct MainMenuState: ScreenState, Sendable {
             siteProtectionsData: state.siteProtectionsData,
             isBrowserDefault: state.isBrowserDefault,
             isPhoneLandscape: state.isPhoneLandscape,
-            moreCellTapped: state.moreCellTapped
+            moreCellTapped: false
         )
     }
 
