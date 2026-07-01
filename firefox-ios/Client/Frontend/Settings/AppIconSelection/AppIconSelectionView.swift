@@ -18,6 +18,7 @@ struct AppIconSelectionView: View, ThemeApplicable, FeatureFlaggable {
 
     @State private var currentAppIcon = AppIcon.initFromSystem()
     @State private var isShowingErrorAlert = false
+    @State private var errorMessage = ""
 
     // MARK: - Theming
     // FIXME FXIOS-11472 Improve our SwiftUI theming
@@ -55,7 +56,7 @@ struct AppIconSelectionView: View, ThemeApplicable, FeatureFlaggable {
             .alert(isPresented: $isShowingErrorAlert) {
                 Alert(
                     title: Text(String.Settings.AppIconSelection.Errors.SelectErrorMessage),
-                    message: nil,
+                    message: errorMessage.isEmpty ? nil : Text(errorMessage),
                     dismissButton: .default(
                         Text(String.Settings.AppIconSelection.Errors.SelectErrorConfirmation)
                     )
@@ -90,8 +91,11 @@ struct AppIconSelectionView: View, ThemeApplicable, FeatureFlaggable {
         // If the user is resetting to the default app icon, we need to set the alternative icon to nil.
         UIApplication.shared.setAlternateIconName(appIcon.appIconAssetName) { error in
             guard error == nil else {
-                logger.log("Failed to set an alternative app icon [\(appIcon)]", level: .fatal, category: .appIcon)
+                let errorDesc = error?.localizedDescription ?? "Unknown error"
+                logger.log("Failed to set an alternative app icon [\(appIcon)]: \(errorDesc)",
+                           level: .fatal, category: .appIcon)
                 ensureMainThread {
+                    self.errorMessage = errorDesc
                     self.isShowingErrorAlert = true
 
                     // Reset the app icon in the UI since we changed it optimistically to provide UI feedback
