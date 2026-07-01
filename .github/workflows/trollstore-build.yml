@@ -76,100 +76,6 @@ jobs:
           BUILD_DIR="../DerivedData"
           rm -rf "${BUILD_DIR}/Build"
 
-          echo "=== Self-signed cert ==="
-
-          security delete-keychain build.keychain 2>/dev/null || true
-          security create-keychain -p "" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "" build.keychain
-          security set-keychain-settings -t 7200 build.keychain
-
-          openssl genpkey -algorithm RSA -out /tmp/ca_key.pem -pkeyopt rsa_keygen_bits:2048
-          openssl req -new -x509 -days 7300 -key /tmp/ca_key.pem -out /tmp/ca_cert.pem \
-            -subj "/CN=TrollStore CA"
-          openssl genpkey -algorithm RSA -out /tmp/dev_key.pem -pkeyopt rsa_keygen_bits:2048
-          openssl req -new -key /tmp/dev_key.pem -out /tmp/dev.csr \
-            -subj "/emailAddress=dev@trollstore.local/CN=TrollStore/O=Home/C=US"
-
-          cat > /tmp/dev.ext << 'CONF'
-          basicConstraints=CA:FALSE
-          keyUsage=digitalSignature
-          extendedKeyUsage=codeSigning
-          subjectKeyIdentifier=hash
-          CONF
-
-          openssl x509 -req -days 7300 -in /tmp/dev.csr -CA /tmp/ca_cert.pem \
-            -CAkey /tmp/ca_key.pem -CAcreateserial -out /tmp/dev_cert.pem \
-            -extfile /tmp/dev.ext
-
-          openssl pkcs12 -export -legacy \
-            -in /tmp/dev_cert.pem -inkey /tmp/dev_key.pem \
-            -out /tmp/dev.p12 -passout pass:trollstore \
-            -certfile /tmp/ca_cert.pem 2>&1
-
-          security import /tmp/dev.p12 -k build.keychain -P trollstore -A \
-            -T /usr/bin/codesign -T /usr/bin/security 2>&1 || {
-              echo "PKCS12 import failed, trying without password..."
-              openssl pkcs12 -export -legacy \
-                -in /tmp/dev_cert.pem -inkey /tmp/dev_key.pem \
-                -out /tmp/dev_nopass.p12 -passout pass: \
-                -certfile /tmp/ca_cert.pem 2>&1
-              security import /tmp/dev_nopass.p12 -k build.keychain -P "" -A \
-                -T /usr/bin/codesign -T /usr/bin/security 2>&1
-            }
-
-          security import /tmp/ca_cert.pem -k build.keychain -A \
-            -T /usr/bin/codesign -T /usr/bin/security 2>&1 || true
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
-
-          CERT_NAME=$(security find-identity -p codesigning -v build.keychain 2>/dev/null | grep -o '"[^"]*"' | head -1 | tr -d '"')
-          if [ -z "$CERT_NAME" ]; then
-            echo "Cert not found in keychain, listing identities:"
-            security find-identity -p codesigning -v build.keychain 2>&1 || true
-            CERT_NAME="TrollStore"
-          fi
-          echo "Cert: ${CERT_NAME}"
-
-          PROFILE_UUID=$(uuidgen)
-          DEV_CERT_DER=$(openssl x509 -in /tmp/dev_cert.pem -outform DER 2>/dev/null | base64)
-
-          python3 - "${PROFILE_UUID}" "${DEV_CERT_DER}" << 'PYEOF'
-          import plistlib, os, sys, base64
-          from datetime import datetime, timedelta, timezone
-          profile_uuid, dev_cert_der = sys.argv[1], sys.argv[2]
-          entitlements = {}
-          ent_path = "Client/Entitlements/FennecEnterpriseApplication.entitlements"
-          if os.path.exists(ent_path):
-              with open(ent_path, "rb") as f:
-                  entitlements = plistlib.load(f)
-          cert_data = base64.b64decode(dev_cert_der)
-          profile = {
-              "AppIDName": "Firefox", "ApplicationIdentifierPrefix": ["0000000000"],
-              "CreationDate": datetime.now(timezone.utc), "Platform": ["iOS"],
-              "IsXcodeManaged": False,
-              "DeveloperCertificates": [cert_data],
-              "Entitlements": entitlements,
-              "ExpirationDate": datetime.now(timezone.utc) + timedelta(days=7300),
-              "Name": "Firefox TrollStore", "ProvisionedDevices": [],
-              "TeamIdentifier": ["0000000000"], "TeamName": "TrollStore",
-              "TimeToLive": 7300, "UUID": profile_uuid, "Version": 1,
-          }
-          with open("/tmp/profile.plist", "wb") as f:
-              plistlib.dump(profile, f, fmt=plistlib.FMT_XML)
-          PYEOF
-
-          if [ -n "$CERT_NAME" ]; then
-            security cms -S -N "${CERT_NAME}" \
-              -i /tmp/profile.plist -o "/tmp/${PROFILE_UUID}.mobileprovision" \
-              -k build.keychain 2>/dev/null || true
-          fi
-          if [ ! -f "/tmp/${PROFILE_UUID}.mobileprovision" ]; then
-            cp /tmp/profile.plist "/tmp/${PROFILE_UUID}.mobileprovision"
-          fi
-
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp "/tmp/${PROFILE_UUID}.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/
-
           xcodebuild build \
             -skipMacroValidation \
             -project Client.xcodeproj \
@@ -177,11 +83,12 @@ jobs:
             -sdk iphoneos \
             -configuration Fennec_Enterprise \
             -derivedDataPath "${BUILD_DIR}" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="${CERT_NAME}" \
+            CODE_SIGN_STYLE=Automatic \
             AD_HOC_CODE_SIGNING_ALLOWED=YES \
             DEVELOPMENT_TEAM=0000000000 \
-            OTHER_CODE_SIGN_FLAGS="--generate-entitlement-der" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE="" \
             DEBUG_INFORMATION_FORMAT=dwarf \
             2>&1 | tee ../build.log | tail -200
 
@@ -192,7 +99,7 @@ jobs:
             grep -i "error:" ../build.log 2>/dev/null | head -50
             exit 1
           fi
-          echo "BUILD_METHOD=self-signed" >> $GITHUB_OUTPUT
+          echo "BUILD_METHOD=ad-hoc" >> $GITHUB_OUTPUT
           echo "APP_PATH=${APP_PATH}" >> $GITHUB_OUTPUT
           echo "Build succeeded!"
 
