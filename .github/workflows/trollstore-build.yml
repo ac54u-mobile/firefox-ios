@@ -83,6 +83,7 @@ jobs:
             -sdk iphoneos \
             -configuration Fennec_Enterprise \
             -derivedDataPath "${BUILD_DIR}" \
+            ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon_Alt_Fun_Momo \
             CODE_SIGN_STYLE=Automatic \
             AD_HOC_CODE_SIGNING_ALLOWED=YES \
             DEVELOPMENT_TEAM=0000000000 \
