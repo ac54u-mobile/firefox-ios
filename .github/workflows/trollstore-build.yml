@@ -78,6 +78,7 @@ jobs:
 
           echo "=== Self-signed cert ==="
 
+          security delete-keychain build.keychain 2>/dev/null || true
           security create-keychain -p "" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "" build.keychain

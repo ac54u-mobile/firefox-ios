@@ -235,25 +235,7 @@ struct MainMenuConfigurationUtility: Equatable, FeatureFlaggable {
     ) -> MenuSection {
         var options: [MenuElement] = [
             configureBookmarkPageItem(with: uuid, and: tabInfo),
-            MenuElement(
-                title: .MainMenu.ToolsSection.FindInPage,
-                iconName: Icons.findInPage,
-                isEnabled: true,
-                isActive: false,
-                a11yLabel: .MainMenu.ToolsSection.AccessibilityLabels.FindInPage,
-                a11yHint: "",
-                a11yId: AccessibilityIdentifiers.MainMenu.findInPage,
-                action: {
-                    store.dispatch(
-                        MainMenuAction(
-                            windowUUID: uuid,
-                            actionType: MainMenuActionType.tapNavigateToDestination,
-                            navigationDestination: MenuNavigationDestination(.findInPage),
-                            telemetryInfo: TelemetryInfo(isHomepage: tabInfo.isHomepage)
-                        )
-                    )
-                }
-            ),
+            configureZoomItem(with: uuid, and: tabInfo),
         ]
         if isSummarizerOn, tabInfo.summaryIsAvailable, !UIWindow.isLandscape {
             options.append(configureSummarizerItem(with: uuid, tabInfo: tabInfo))
@@ -262,7 +244,26 @@ struct MainMenuConfigurationUtility: Equatable, FeatureFlaggable {
         if !isExpanded {
             options.append(configureMoreLessItem(with: uuid, tabInfo: tabInfo, isExpanded: isExpanded))
         } else {
-            options.append(configureZoomItem(with: uuid, and: tabInfo))
+            options.append(
+                MenuElement(
+                    title: .MainMenu.ToolsSection.FindInPage,
+                    iconName: Icons.findInPage,
+                    isEnabled: true,
+                    isActive: false,
+                    a11yLabel: .MainMenu.ToolsSection.AccessibilityLabels.FindInPage,
+                    a11yHint: "",
+                    a11yId: AccessibilityIdentifiers.MainMenu.findInPage,
+                    action: {
+                        store.dispatch(
+                            MainMenuAction(
+                                windowUUID: uuid,
+                                actionType: MainMenuActionType.tapNavigateToDestination,
+                                navigationDestination: MenuNavigationDestination(.findInPage),
+                                telemetryInfo: TelemetryInfo(isHomepage: tabInfo.isHomepage)
+                            )
+                        )
+                    }
+                ))
             if let translationItem = configureTranslationItem(with: uuid, tabInfo: tabInfo, localeProvider: localeProvider) {
                 options.append(translationItem)
             }
