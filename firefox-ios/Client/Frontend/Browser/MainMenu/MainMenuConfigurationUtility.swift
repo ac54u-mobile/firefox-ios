@@ -235,7 +235,25 @@ struct MainMenuConfigurationUtility: Equatable, FeatureFlaggable {
     ) -> MenuSection {
         var options: [MenuElement] = [
             configureBookmarkPageItem(with: uuid, and: tabInfo),
-            configureZoomItem(with: uuid, and: tabInfo),
+            MenuElement(
+                title: .MainMenu.ToolsSection.FindInPage,
+                iconName: Icons.findInPage,
+                isEnabled: true,
+                isActive: false,
+                a11yLabel: .MainMenu.ToolsSection.AccessibilityLabels.FindInPage,
+                a11yHint: "",
+                a11yId: AccessibilityIdentifiers.MainMenu.findInPage,
+                action: {
+                    store.dispatch(
+                        MainMenuAction(
+                            windowUUID: uuid,
+                            actionType: MainMenuActionType.tapNavigateToDestination,
+                            navigationDestination: MenuNavigationDestination(.findInPage),
+                            telemetryInfo: TelemetryInfo(isHomepage: tabInfo.isHomepage)
+                        )
+                    )
+                }
+            ),
         ]
         if isSummarizerOn, tabInfo.summaryIsAvailable, !UIWindow.isLandscape {
             options.append(configureSummarizerItem(with: uuid, tabInfo: tabInfo))
@@ -244,26 +262,7 @@ struct MainMenuConfigurationUtility: Equatable, FeatureFlaggable {
         if !isExpanded {
             options.append(configureMoreLessItem(with: uuid, tabInfo: tabInfo, isExpanded: isExpanded))
         } else {
-            options.append(
-                MenuElement(
-                    title: .MainMenu.ToolsSection.FindInPage,
-                    iconName: Icons.findInPage,
-                    isEnabled: true,
-                    isActive: false,
-                    a11yLabel: .MainMenu.ToolsSection.AccessibilityLabels.FindInPage,
-                    a11yHint: "",
-                    a11yId: AccessibilityIdentifiers.MainMenu.findInPage,
-                    action: {
-                        store.dispatch(
-                            MainMenuAction(
-                                windowUUID: uuid,
-                                actionType: MainMenuActionType.tapNavigateToDestination,
-                                navigationDestination: MenuNavigationDestination(.findInPage),
-                                telemetryInfo: TelemetryInfo(isHomepage: tabInfo.isHomepage)
-                            )
-                        )
-                    }
-                ))
+            options.append(configureZoomItem(with: uuid, and: tabInfo))
             if let translationItem = configureTranslationItem(with: uuid, tabInfo: tabInfo, localeProvider: localeProvider) {
                 options.append(translationItem)
             }
@@ -344,6 +343,18 @@ struct MainMenuConfigurationUtility: Equatable, FeatureFlaggable {
                 ),
             ])
         }
+
+        // Swap FindInPage (index 1) and PageZoom (last in expanded section) so
+        // PageZoom is always visible and FindInPage requires expanding.
+        if let zoomIndex = options.lastIndex(where: {
+            $0.a11yId == AccessibilityIdentifiers.MainMenu.zoom
+        }) {
+            let zoom = options.remove(at: zoomIndex)
+            let findInPage = options.remove(at: 1)
+            options.insert(zoom, at: 1)
+            options.insert(findInPage, at: zoomIndex)
+        }
+
         return MenuSection(isExpanded: isExpanded, options: options)
     }
 
