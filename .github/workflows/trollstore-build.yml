@@ -62,6 +62,7 @@ jobs:
 
           echo "=== Attempt 1: Ad-hoc signing ==="
           xcodebuild build \
+            -skipMacroValidation \
             -project Client.xcodeproj \
             -scheme Fennec_Enterprise \
             -sdk iphoneos \
@@ -182,6 +183,7 @@ jobs:
           cp "/tmp/${PROFILE_UUID}.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/
 
           xcodebuild build \
+            -skipMacroValidation \
             -project Client.xcodeproj \
             -scheme Fennec_Enterprise \
             -sdk iphoneos \
