@@ -15,4 +15,5 @@ CODE_SIGN_ENTITLEMENTS = Client/Entitlements/FennecEnterpriseApplication.entitle
 CHANNEL = developer
 OTHER_SWIFT_FLAGS = $(OTHER_SWIFT_FLAGS_common) -DMOZ_CHANNEL_$(CHANNEL)
 MOZ_INTERNAL_URL_SCHEME = fennec
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon_Alt_Fun_Momo
 

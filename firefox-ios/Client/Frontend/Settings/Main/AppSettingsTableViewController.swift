@@ -387,7 +387,8 @@ class AppSettingsTableViewController: SettingsTableViewController,
         }
 
         // For users whose devices support alternate app icons, add the App Icon setting
-        if UIApplication.shared.supportsAlternateIcons {
+        if UIApplication.shared.supportsAlternateIcons,
+           !(Bundle.main.bundleIdentifier ?? "").hasSuffix("FennecEnterprise") {
             generalSettings.append(
                 AppIconSetting(
                     theme: themeManager.getCurrentTheme(for: windowUUID),
