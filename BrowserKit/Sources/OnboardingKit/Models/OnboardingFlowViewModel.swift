@@ -109,6 +109,7 @@ public final class OnboardingFlowViewModel<ViewModel: OnboardingCardInfoModelPro
 
     public func skipOnboarding() {
         guard !onboardingCards.isEmpty else {
+            onComplete("", .skipped)
             return
         }
 

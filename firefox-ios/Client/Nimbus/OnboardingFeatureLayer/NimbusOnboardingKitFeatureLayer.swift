@@ -91,13 +91,16 @@ class NimbusOnboardingKitFeatureLayer: NimbusOnboardingFeatureLayerProtocol {
     ) -> [OnboardingKitCardInfoModel] {
         let a11yOnboarding = AccessibilityIdentifiers.Onboarding.onboarding
 
-        // If `NimbusMessagingHelper` creation fails, we cannot continue with
-        // evaluating card triggers based on their JEXL prerequisites.
-        // Therefore, we return an empty array.
-        guard let helper = helperUtility.createNimbusMessagingHelper() else { return [] }
+        let helper = helperUtility.createNimbusMessagingHelper()
 
         return cardData.compactMap { cardName, cardData in
-            if cardIsValid(with: cardData, using: conditionTable, and: helper) {
+            let isValid: Bool
+            if let helper {
+                isValid = cardIsValid(with: cardData, using: conditionTable, and: helper)
+            } else {
+                isValid = true
+            }
+            if isValid {
                 return OnboardingKitCardInfoModel(
                     cardType: OnboardingKit.OnboardingCardType(rawValue: cardData.cardType.rawValue) ?? .basic,
                     name: cardName,
